@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>X Post Master - Preview</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwindcss.config = {
+  theme: { extend: {} }
+}
+</script>
+<style>
+body { background: #030712; color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; }
+.card-hover { transition: all 0.2s; }
+.card-hover:active { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(59,130,246,0.1); }
+.tab-active { background: rgba(37,99,235,0.2); color: #60a5fa; }
+.fade-in { animation: fadeIn 0.3s ease-in; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.cursor-blink { animation: pulse 1s infinite; }
+.generating-shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+</style>
+</head>
+<body>
+<!-- ==================== -->
+<!-- Screen 1: ネタ帳      -->
+<!-- ==================== -->
+<div id="screen-ideabook">
+
+  <!-- Header -->
+  <header class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <svg class="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <h1 class="text-lg font-bold text-white">X Post Master</h1>
+        <span class="text-xs bg-blue-600/30 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">β</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium tab-active" onclick="showScreen('ideabook')">📝 ネタ帳</button>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400" onclick="showScreen('history')">🕐 履歴</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-6xl mx-auto px-4 py-6">
+    <!-- Title -->
+    <div class="flex items-center justify-between mb-6">
+      <div>
+        <h2 class="text-2xl font-bold text-white">📝 ネタ帳</h2>
+        <p class="text-sm text-gray-400 mt-1">投稿のアイデアをストックして、いつでもマルチ生成</p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button class="p-2 rounded-lg bg-gray-800 text-gray-400 border border-gray-700" onclick="toggleView()">
+          <svg id="view-icon" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </button>
+        <button class="flex items-center gap-2 bg-blue-600 text-white font-medium px-4 py-2 rounded-lg text-sm" onclick="showScreen('generate')">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          新しいネタ
+        </button>
+      </div>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-6">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" placeholder="ネタを検索..." class="w-full bg-gray-900 border border-gray-700 rounded-lg pl-10 pr-4 py-2.5 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    </div>
+
+    <!-- Card Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="idea-grid">
+
+      <div class="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 card-hover relative" onclick="showScreen('generate')">
+        <div class="absolute top-2 right-2">
+          <svg class="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l-2 7H3l6 4.5L7 21l5-3.5L17 21l-2-7.5L21 9h-7z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <p class="text-gray-100 text-sm leading-relaxed mb-3 pr-6">AIツールの使い分け方法まとめ</p>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#AI</span>
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#テック</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500">2025/01/15</span>
+          <span class="text-xs text-blue-400">→ 生成する</span>
+        </div>
+      </div>
+
+      <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 card-hover" onclick="showScreen('generate')">
+        <p class="text-gray-100 text-sm leading-relaxed mb-3">朝活を3ヶ月続けた結果</p>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#ライフスタイル</span>
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#習慣</span>
+        </div>
+        <span class="text-xs text-gray-500">2025/01/14</span>
+      </div>
+
+      <div class="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 card-hover" onclick="showScreen('generate')">
+        <p class="text-gray-100 text-sm leading-relaxed mb-3">フリーランスの確定申告で失敗した話</p>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#フリーランス</span>
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#お金</span>
+        </div>
+        <span class="text-xs text-gray-500">2025/01/13</span>
+      </div>
+
+      <div class="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4 card-hover relative" onclick="showScreen('generate')">
+        <div class="absolute top-2 right-2">
+          <svg class="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" viewBox="0 0 24 24"><path d="M12 2l-2 7H3l6 4.5L7 21l5-3.5L17 21l-2-7.5L21 9h-7z" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        </div>
+        <p class="text-gray-100 text-sm leading-relaxed mb-3 pr-6">プログラミング初心者が最初に学ぶべき言語論争に終止符を打つ</p>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#プログラミング</span>
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#初心者</span>
+        </div>
+        <span class="text-xs text-gray-500">2025/01/12</span>
+      </div>
+
+      <div class="bg-pink-500/10 border border-pink-500/20 rounded-xl p-4 card-hover" onclick="showScreen('generate')">
+        <p class="text-gray-100 text-sm leading-relaxed mb-3">リモートワークで生産性が3倍になった環境構築</p>
+        <div class="flex flex-wrap gap-1.5 mb-3">
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#リモートワーク</span>
+          <span class="text-xs bg-gray-800/50 text-gray-400 px-2 py-0.5 rounded-full">#生産性</span>
+        </div>
+        <span class="text-xs text-gray-500">2025/01/11</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ======================== -->
+<!-- Screen 2: 生成画面        -->
+<!-- ======================== -->
+<div id="screen-generate" style="display:none">
+
+  <header class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <svg class="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <h1 class="text-lg font-bold text-white">X Post Master</h1>
+        <span class="text-xs bg-blue-600/30 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">β</span>
+      </div>
+      <div class="flex items-center gap-1.5 bg-gray-800 rounded-lg px-3 py-1.5 border border-gray-700">
+        <span class="text-yellow-400">✨</span>
+        <span class="text-xs text-gray-300">Mock Mode</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Back button & selected idea -->
+    <div class="mb-6">
+      <button onclick="showScreen('ideabook')" class="flex items-center gap-2 text-gray-400 mb-3 text-sm">
+        ← ネタ帳に戻る
+      </button>
+      <div class="bg-gray-900 border border-gray-700 rounded-xl p-4">
+        <div class="text-xs text-gray-500 mb-1">選択中のネタ</div>
+        <p class="text-white text-lg font-medium">AIツールの使い分け方法まとめ</p>
+        <div class="flex gap-1.5 mt-2">
+          <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">#AI</span>
+          <span class="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">#テック</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6">
+      <div class="mb-3">
+        <label class="text-xs text-gray-500 mb-1.5 block">テイスト</label>
+        <div class="flex flex-wrap gap-1.5">
+          <span class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">😂 大喜利</span>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">🎭 ネタ</span>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">🔥 煽り</span>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">📚 博識</span>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-blue-600 text-white">💭 共感</span>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">📢 宣伝</span>
+          <span class="text-xs px-3 py-1.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700">🌙 哀愁</span>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="text-xs text-gray-500 mb-1.5 block">タイプ</label>
+        <div class="flex gap-1.5">
+          <span class="text-xs px-3 py-1.5 rounded-lg bg-blue-600 text-white">💬 単一ポスト</span>
+          <span class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-400 border border-gray-700">🧵 スレッド</span>
+          <span class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-400 border border-gray-700">🖼 画像付き</span>
+          <span class="text-xs px-3 py-1.5 rounded-lg bg-gray-800 text-gray-400 border border-gray-700">📊 アンケート</span>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="startGenerate()" id="gen-btn" class="flex items-center gap-2 bg-blue-600 text-white font-medium px-5 py-2.5 rounded-lg text-sm">
+          ✨ 4つのAIで同時生成
+        </button>
+        <button class="flex items-center gap-2 bg-gray-800 text-gray-200 px-3 py-2.5 rounded-lg border border-gray-700 text-xs">⚡ フック生成</button>
+        <button class="flex items-center gap-2 bg-gray-800 text-gray-200 px-3 py-2.5 rounded-lg border border-gray-700 text-xs">🧪 A/Bテスト</button>
+      </div>
+    </div>
+
+    <!-- 4 LLM Results Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6" id="llm-results">
+
+      <!-- Gemini -->
+      <div class="bg-blue-600/10 border border-blue-500/20 rounded-xl overflow-hidden fade-in">
+        <div class="px-4 py-2.5 border-b border-gray-700/50 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">💎</span>
+            <div>
+              <div class="text-sm font-medium text-blue-400">Gemini</div>
+              <div class="text-xs text-gray-500">データ分析型</div>
+            </div>
+          </div>
+          <span id="gemini-status" class="text-xs text-gray-500"></span>
+        </div>
+        <div class="p-4 min-h-[180px]">
+          <p id="gemini-text" class="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed"></p>
+        </div>
+        <div id="gemini-actions" class="px-4 py-2.5 border-t border-gray-700/50 flex items-center justify-between" style="display:none">
+          <div class="flex items-center gap-1">
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">📋</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🔄</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🛡️</button>
+          </div>
+          <button class="text-xs font-medium px-3 py-1 rounded-lg bg-blue-600/20 text-blue-400 border border-blue-500/30">これを採用</button>
+        </div>
+      </div>
+
+      <!-- ChatGPT -->
+      <div class="bg-emerald-600/10 border border-emerald-500/20 rounded-xl overflow-hidden fade-in" style="animation-delay: 0.1s">
+        <div class="px-4 py-2.5 border-b border-gray-700/50 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🤖</span>
+            <div>
+              <div class="text-sm font-medium text-emerald-400">ChatGPT</div>
+              <div class="text-xs text-gray-500">バランス万能型</div>
+            </div>
+          </div>
+          <span id="chatgpt-status" class="text-xs text-gray-500"></span>
+        </div>
+        <div class="p-4 min-h-[180px]">
+          <p id="chatgpt-text" class="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed"></p>
+        </div>
+        <div id="chatgpt-actions" class="px-4 py-2.5 border-t border-gray-700/50 flex items-center justify-between" style="display:none">
+          <div class="flex items-center gap-1">
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">📋</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🔄</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🛡️</button>
+          </div>
+          <button class="text-xs font-medium px-3 py-1 rounded-lg bg-emerald-600/20 text-emerald-400 border border-emerald-500/30">これを採用</button>
+        </div>
+      </div>
+
+      <!-- Claude -->
+      <div class="bg-orange-600/10 border border-orange-500/20 rounded-xl overflow-hidden fade-in" style="animation-delay: 0.2s">
+        <div class="px-4 py-2.5 border-b border-gray-700/50 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🧠</span>
+            <div>
+              <div class="text-sm font-medium text-orange-400">Claude</div>
+              <div class="text-xs text-gray-500">構造・深掘り型</div>
+            </div>
+          </div>
+          <span id="claude-status" class="text-xs text-gray-500"></span>
+        </div>
+        <div class="p-4 min-h-[180px]">
+          <p id="claude-text" class="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed"></p>
+        </div>
+        <div id="claude-actions" class="px-4 py-2.5 border-t border-gray-700/50 flex items-center justify-between" style="display:none">
+          <div class="flex items-center gap-1">
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">📋</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🔄</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🛡️</button>
+          </div>
+          <button class="text-xs font-medium px-3 py-1 rounded-lg bg-orange-600/20 text-orange-400 border border-orange-500/30">これを採用</button>
+        </div>
+      </div>
+
+      <!-- Grok -->
+      <div class="bg-red-600/10 border border-red-500/20 rounded-xl overflow-hidden fade-in" style="animation-delay: 0.3s">
+        <div class="px-4 py-2.5 border-b border-gray-700/50 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🔥</span>
+            <div>
+              <div class="text-sm font-medium text-red-400">Grok</div>
+              <div class="text-xs text-gray-500">皮肉・エッジ型</div>
+            </div>
+          </div>
+          <span id="grok-status" class="text-xs text-gray-500"></span>
+        </div>
+        <div class="p-4 min-h-[180px]">
+          <p id="grok-text" class="text-gray-200 text-sm whitespace-pre-wrap leading-relaxed"></p>
+        </div>
+        <div id="grok-actions" class="px-4 py-2.5 border-t border-gray-700/50 flex items-center justify-between" style="display:none">
+          <div class="flex items-center gap-1">
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">📋</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🔄</button>
+            <button class="p-1.5 rounded-lg text-gray-400 text-xs">🛡️</button>
+          </div>
+          <button class="text-xs font-medium px-3 py-1 rounded-lg bg-red-600/20 text-red-400 border border-red-500/30">これを採用</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Hook Variations (shown after generate) -->
+    <div id="hooks-section" class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6" style="display:none">
+      <h3 class="text-sm font-medium text-yellow-400 flex items-center gap-2 mb-3">⚡ フック（1行目）バリエーション 10パターン</h3>
+      <div class="space-y-1.5" id="hooks-list"></div>
+    </div>
+
+    <!-- A/B Test Results (shown after generate) -->
+    <div id="abtest-section" class="bg-gray-900 border border-gray-700 rounded-xl p-4 mb-6" style="display:none">
+      <h3 class="text-sm font-medium text-purple-400 flex items-center gap-2 mb-3">🧪 A/Bテスト（思考実験）結果</h3>
+      <div class="space-y-3" id="abtest-results"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ======================== -->
+<!-- Screen 3: 履歴           -->
+<!-- ======================== -->
+<div id="screen-history" style="display:none">
+  <header class="bg-gray-900/80 backdrop-blur-sm border-b border-gray-800 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <svg class="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <h1 class="text-lg font-bold text-white">X Post Master</h1>
+        <span class="text-xs bg-blue-600/30 text-blue-300 px-2 py-0.5 rounded-full border border-blue-500/30">β</span>
+      </div>
+      <div class="flex items-center gap-1">
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400" onclick="showScreen('ideabook')">📝 ネタ帳</button>
+        <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium tab-active" onclick="showScreen('history')">🕐 履歴</button>
+      </div>
+    </div>
+  </header>
+  <div class="max-w-4xl mx-auto px-4 py-20 text-center">
+    <div class="text-5xl mb-4">🕐</div>
+    <p class="text-gray-400 text-lg">履歴はまだありません</p>
+    <p class="text-gray-500 text-sm mt-1">ポストを生成・採用すると、ここに履歴が表示されます</p>
+  </div>
+</div>
+
+<script>
+// Screen navigation
+function showScreen(name) {
+  document.getElementById('screen-ideabook').style.display = name === 'ideabook' ? 'block' : 'none';
+  document.getElementById('screen-generate').style.display = name === 'generate' ? 'block' : 'none';
+  document.getElementById('screen-history').style.display = name === 'history' ? 'block' : 'none';
+  window.scrollTo(0, 0);
+}
+
+// Mock responses for each LLM
+const mockData = {
+  gemini: `📊 データが示す真実\n\nAIツールの使い分けについて、最新の調査データが興味深い結果を示しています。\n\n実は全体の73%が「なんとなく」でツールを選んでいるにも関わらず、使い分けを意識している人の生産性は平均2.4倍。\n\nこの差が生まれる原因は3つ：\n①目的の言語化不足\n②ツール特性の無理解\n③切替コストへの過大評価\n\nあなたはどれに当てはまりますか？`,
+  chatgpt: `これ、めちゃくちゃ共感する人多いと思う。\n\nAIツールの使い分けって、誰もが一度は迷ったことあるはず。\n\n僕が実践して効果があった方法を3つシェアします👇\n\n①まず「何を作りたいか」を明確にする\n②3つのAIに同じ質問を投げて比較する\n③得意分野をメモしておく\n\nこの3ステップだけで、ツール選びの迷いが消えます。\n\n試してみた感想、教えてください！`,
+  claude: `「AIツールの使い分け」の本質を考えると、面白い構造が見えてきます。\n\n表面的には「どのAIが優秀か」という議論に見えますが、実は本質は別のところにあります。\n\n重要なのは：\n・各AIの「思考の癖」を理解すること\n・自分の作業フェーズに合わせること\n・1つに依存しないポートフォリオ思考\n\nつまり「最強のAI」を探すのではなく、「最適な組み合わせ」を設計する視点が必要。\n\nこの発想の転換、どう思いますか？`,
+  grok: `ぶっちゃけAIツールの使い分けとか、みんな難しく考えすぎ。\n\n現実見ろよって話。\n\n・ChatGPT → とりあえず何でも聞く用\n・Claude → 長文・分析で使う\n・Gemini → Google連携したい時\n・Grok → Xで真実を知りたい時\n\n以上。\n\n「最適な使い分け」とか言ってるインフルエンサーの大半は、アフィリエイトリンク貼りたいだけ。\n\nシンプルに使って、自分の肌感で選べ。\n\n異論は？🫡`
+};
+
+// Streaming text simulation
+function streamText(elementId, text, delay) {
+  return new Promise(resolve => {
+    const el = document.getElementById(elementId);
+    let i = 0;
+    const statusEl = document.getElementById(elementId.replace('-text', '-status'));
+    if (statusEl) statusEl.innerHTML = '<span class="text-yellow-400">生成中...</span>';
+
+    setTimeout(() => {
+      const interval = setInterval(() => {
+        if (i < text.length) {
+          el.textContent = text.substring(0, i + 3);
+          i += 3;
+        } else {
+          el.textContent = text;
+          clearInterval(interval);
+          if (statusEl) statusEl.textContent = '✓ 完了';
+          document.getElementById(elementId.replace('-text', '-actions')).style.display = 'flex';
+          resolve();
+        }
+      }, 15);
+    }, delay);
+  });
+}
+
+let generated = false;
+function startGenerate() {
+  if (generated) {
+    // Reset
+    ['gemini','chatgpt','claude','grok'].forEach(id => {
+      document.getElementById(id + '-text').textContent = '';
+      document.getElementById(id + '-status').textContent = '';
+      document.getElementById(id + '-actions').style.display = 'none';
+    });
+    document.getElementById('hooks-section').style.display = 'none';
+    document.getElementById('abtest-section').style.display = 'none';
+  }
+
+  const btn = document.getElementById('gen-btn');
+  btn.innerHTML = '⏳ 生成中...';
+  btn.disabled = true;
+
+  Promise.all([
+    streamText('gemini-text', mockData.gemini, 300),
+    streamText('chatgpt-text', mockData.chatgpt, 600),
+    streamText('claude-text', mockData.claude, 900),
+    streamText('grok-text', mockData.grok, 500),
+  ]).then(() => {
+    btn.innerHTML = '✨ 4つのAIで同時生成';
+    btn.disabled = false;
+    generated = true;
+
+    // Show hooks after a short delay
+    setTimeout(() => {
+      showHooks();
+      showABTest();
+    }, 800);
+  });
+}
+
+function showHooks() {
+  const hooks = [
+    { text: '【衝撃】AIツールの使い分けの真実を暴露します', type: '衝撃系' },
+    { text: 'AIツールの使い分けについて、99%の人が知らないこと', type: '数字系' },
+    { text: 'なぜAIツールの使い分けが今、注目されているのか？', type: '疑問系' },
+    { text: 'AIツールを3年使って分かった、たった1つの本質', type: '体験系' },
+    { text: 'AIツールがうまく使える人の共通点、見つけました', type: '発見系' },
+    { text: '正直、AIツールの使い分けについてずっと黙ってたけど', type: '告白系' },
+    { text: '今すぐAIツール選びをやめたほうがいい3つの理由', type: '逆張り系' },
+    { text: 'AIツールの「当たり前」を疑ったら、世界が変わった', type: '転換系' },
+  ];
+
+  const section = document.getElementById('hooks-section');
+  const list = document.getElementById('hooks-list');
+  list.innerHTML = hooks.map((h, i) => `
+    <div class="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2">
+      <span class="text-xs text-gray-500 w-5 shrink-0">#${i+1}</span>
+      <p class="text-sm text-gray-200 flex-1">${h.text}</p>
+      <span class="text-xs text-gray-500 shrink-0">${h.type}</span>
+    </div>
+  `).join('');
+  section.style.display = 'block';
+}
+
+function showABTest() {
+  const results = [
+    { avatar: '💎', name: 'Gemini案', score: 78, impressions: '12,400', general: { score: 75, comment: '参考になる' }, anti: { score: 25, comment: '根拠は？' }, fan: { score: 88, comment: '保存しました' }},
+    { avatar: '🤖', name: 'ChatGPT案', score: 85, impressions: '18,200', general: { score: 82, comment: '共感できる' }, anti: { score: 30, comment: 'ポジショントーク' }, fan: { score: 92, comment: '今日一番の投稿' }},
+    { avatar: '🧠', name: 'Claude案', score: 72, impressions: '9,800', general: { score: 68, comment: '面白い視点' }, anti: { score: 35, comment: 'それは違う' }, fan: { score: 85, comment: 'さすがです' }},
+    { avatar: '🔥', name: 'Grok案', score: 91, impressions: '24,500', general: { score: 88, comment: 'ちょっと刺さった' }, anti: { score: 15, comment: '極論すぎる' }, fan: { score: 95, comment: '共有します' }},
+  ];
+
+  const section = document.getElementById('abtest-section');
+  const container = document.getElementById('abtest-results');
+  container.innerHTML = results.map(r => `
+    <div class="bg-gray-800/50 rounded-lg p-3">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-sm">${r.avatar}</span>
+          <span class="text-sm text-gray-300">${r.name}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-400">予測imp:</span>
+          <span class="text-sm font-medium text-blue-400">${r.impressions}</span>
+        </div>
+      </div>
+      <div class="relative h-2 bg-gray-700 rounded-full mb-3 overflow-hidden">
+        <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" style="width:${r.score}%"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="bg-gray-900/50 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-sm">👤</div><div class="text-xs text-gray-400">一般</div>
+          <div class="text-sm font-medium text-gray-200">${r.general.score}点</div>
+          <div class="text-xs text-gray-500">「${r.general.comment}」</div>
+        </div>
+        <div class="bg-gray-900/50 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-sm">👊</div><div class="text-xs text-gray-400">アンチ</div>
+          <div class="text-sm font-medium text-gray-200">${r.anti.score}点</div>
+          <div class="text-xs text-gray-500">「${r.anti.comment}」</div>
+        </div>
+        <div class="bg-gray-900/50 rounded-lg px-2 py-1.5 text-center">
+          <div class="text-sm">⭐</div><div class="text-xs text-gray-400">ファン</div>
+          <div class="text-sm font-medium text-gray-200">${r.fan.score}点</div>
+          <div class="text-xs text-gray-500">「${r.fan.comment}」</div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  section.style.display = 'block';
+}
+</script>
+</body>
+</html>
