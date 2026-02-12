@@ -39,6 +39,10 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    }
+
     const settings = await prisma.userSettings.findUnique({
       where: { userId },
     });
@@ -89,6 +93,10 @@ export async function PUT(request: NextRequest) {
     const userId = await getSessionUser();
     if (!userId) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
 
     const body = await request.json();

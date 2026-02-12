@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    }
+
     const body = await request.json();
     const parsed = generateSchema.safeParse(body);
 

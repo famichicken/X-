@@ -33,6 +33,10 @@ export async function GET() {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    }
+
     const ideas = await prisma.idea.findMany({
       where: { userId },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "desc" }],
@@ -53,6 +57,10 @@ export async function POST(request: NextRequest) {
     const userId = await getSessionUser();
     if (!userId) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
 
     const body = await request.json();
@@ -100,6 +108,10 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
     }
 
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
+    }
+
     const body = await request.json();
     const parsed = updateIdeaSchema.safeParse(body);
 
@@ -143,6 +155,10 @@ export async function DELETE(request: NextRequest) {
     const userId = await getSessionUser();
     if (!userId) {
       return NextResponse.json({ error: "認証が必要です" }, { status: 401 });
+    }
+
+    if (!prisma) {
+      return NextResponse.json({ error: "Database not configured" }, { status: 503 });
     }
 
     const { searchParams } = new URL(request.url);

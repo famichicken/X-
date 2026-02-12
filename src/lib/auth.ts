@@ -4,7 +4,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
 const config: NextAuthConfig = {
-  adapter: PrismaAdapter(prisma),
+  ...(prisma ? { adapter: PrismaAdapter(prisma) } : {}),
   providers: [
     {
       id: "twitter",
@@ -34,7 +34,7 @@ const config: NextAuthConfig = {
   ],
   callbacks: {
     async session({ session, user }) {
-      if (session.user) {
+      if (session.user && user) {
         (session.user as { id: string }).id = user.id;
       }
       return session;
@@ -43,7 +43,7 @@ const config: NextAuthConfig = {
   pages: {
     signIn: "/",
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || "dev-secret-placeholder",
 };
 
 export const { handlers, auth, signIn, signOut } = NextAuth(config);

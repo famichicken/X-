@@ -5,14 +5,21 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-function createPrismaClient() {
-  const adapter = new PrismaLibSQL({
-    url: process.env.DATABASE_URL ?? "file:./prisma/dev.db",
-  });
-
-  return new PrismaClient({ adapter });
+function createPrismaClient(): PrismaClient | null {
+  try {
+    const url = process.env.DATABASE_URL;
+    if (!url) {
+      console.warn("DATABASE_URL not set, database features disabled");
+      return null;
+    }
+    const adapter = new PrismaLibSQL({ url });
+    return new PrismaClient({ adapter });
+  } catch (e) {
+    console.warn("Failed to initialize Prisma:", e);
+    return null;
+  }
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+if (process.env.NODE_ENV !== "production" && prisma) globalForPrisma.prisma = prisma;
