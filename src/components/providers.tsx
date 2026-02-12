@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
 
@@ -8,6 +9,12 @@ interface ProvidersProps {
 }
 
 export function Providers({ children }: ProvidersProps) {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/X-/sw.js").catch(() => {});
+    }
+  }, []);
+
   return (
     <SessionProvider>
       {children}
