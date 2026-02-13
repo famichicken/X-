@@ -1,41 +1,50 @@
 import NextAuth from "next-auth";
 import type { NextAuthConfig } from "next-auth";
+import Twitter from "next-auth/providers/twitter";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
 
 const config: NextAuthConfig = {
   ...(prisma ? { adapter: PrismaAdapter(prisma) } : {}),
+  session: { strategy: prisma ? "database" : "jwt" },
   providers: [
-    {
-      id: "twitter",
-      name: "X (Twitter)",
-      type: "oauth",
+    Twitter({
       clientId: process.env.X_CLIENT_ID ?? "",
       clientSecret: process.env.X_CLIENT_SECRET ?? "",
       authorization: {
-        url: "https://twitter.com/i/oauth2/authorize",
+        url: "https://x.com/i/oauth2/authorize",
         params: {
           scope: "tweet.read tweet.write users.read offline.access",
         },
       },
-      token: "https://api.twitter.com/2/oauth2/token",
-      userinfo: "https://api.twitter.com/2/users/me?user.fields=profile_image_url",
-      profile(profile: { data: { id: string; name: string; username: string; profile_image_url?: string } }) {
+      profile({ data }) {
         return {
-          id: profile.data.id,
-          name: profile.data.name,
-          email: null,
-          image: profile.data.profile_image_url,
-          xUsername: profile.data.username,
-          xId: profile.data.id,
+          id: data.id,
+          name: data.name,
+          email: data.email ?? null,
+          image: data.profile_image_url,
         };
       },
-    },
+    }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user && user) {
-        (session.user as { id: string }).id = user.id;
+    async jwt({ token, profile }) {
+      if (profile) {
+        const p = profile as { data?: { id: string; username: string } };
+        if (p.data) {
+          token.sub = p.data.id;
+          token.username = p.data.username;
+        }
+      }
+      return token;
+    },
+    async session({ session, token, user }) {
+      if (session.user) {
+        if (token) {
+          session.user.id = token.sub ?? "";
+        } else if (user) {
+          session.user.id = user.id;
+        }
       }
       return session;
     },
