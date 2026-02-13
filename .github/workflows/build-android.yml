@@ -4,11 +4,17 @@ on:
   push:
     branches:
       - claude/init-x-post-generator-ktLqV
+      - main
   workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
 
 jobs:
   build-apk:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -20,7 +26,7 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
@@ -28,9 +34,11 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          accept-android-sdk-licenses: true
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Generate Prisma Client
         run: npx prisma generate
@@ -39,29 +47,27 @@ jobs:
 
       - name: Build static export for Android
         run: |
-          # Use Android-specific config (no basePath)
           cp next.config.android.ts next.config.ts
-          # Remove API routes for static export
           rm -rf src/app/api
-          # Build
           npx next build
         env:
           DATABASE_URL: "file:./dev.db"
           NEXTAUTH_SECRET: "build-placeholder"
+          NEXTAUTH_URL: "http://localhost:3000"
 
       - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Make gradlew executable
-        run: chmod +x android/gradlew
-
       - name: Build Debug APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: x-post-generator-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 30
+          retention-days: 90
+          if-no-files-found: error
