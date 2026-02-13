@@ -1,0 +1,67 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - claude/init-x-post-generator-ktLqV
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: "file:./dev.db"
+
+      - name: Build static export for Android
+        run: |
+          # Use Android-specific config (no basePath)
+          cp next.config.android.ts next.config.ts
+          # Remove API routes for static export
+          rm -rf src/app/api
+          # Build
+          npx next build
+        env:
+          DATABASE_URL: "file:./dev.db"
+          NEXTAUTH_SECRET: "build-placeholder"
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Make gradlew executable
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: x-post-generator-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30

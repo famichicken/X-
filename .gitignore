@@ -57,3 +57,11 @@ next-env.d.ts
 .vscode/
 *.swp
 *.swo
+
+# Android build outputs
+/android/app/build/
+/android/build/
+/android/.gradle/
+/android/capacitor-cordova-android-plugins/build/
+*.apk
+*.aab
