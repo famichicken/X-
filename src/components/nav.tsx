@@ -5,11 +5,12 @@ import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Twitter, Lightbulb, Sparkles, History, Settings, LogIn, LogOut } from "lucide-react";
+import { Twitter, Lightbulb, Sparkles, History, Settings, LogIn, LogOut, Heart } from "lucide-react";
 
 const navItems = [
   { href: "/ideas", icon: Lightbulb, label: "ネタ帳" },
   { href: "/generate", icon: Sparkles, label: "AI生成" },
+  { href: "/engage", icon: Heart, label: "エンゲージ" },
   { href: "/history", icon: History, label: "履歴" },
   { href: "/settings", icon: Settings, label: "設定" },
 ];

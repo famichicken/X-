@@ -1,0 +1,31 @@
+{
+  "name": "X Post Generator",
+  "short_name": "X Post Gen",
+  "description": "AIを活用してXの投稿を生成・最適化するツール",
+  "start_url": "/X-/",
+  "scope": "/X-/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/X-/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/X-/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/X-/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["productivity", "social"],
+  "lang": "ja"
+}
