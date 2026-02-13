@@ -34,6 +34,7 @@ const config: NextAuthConfig = {
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }
+      (session as unknown as Record<string, unknown>).accessToken = token.accessToken;
       return session;
     },
   },

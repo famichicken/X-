@@ -24,6 +24,7 @@ import {
   BookmarkPlus,
   BarChart3,
   Flame,
+  Send,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -98,18 +99,43 @@ function AISheetTabs({
   drafts,
   onConfirm,
   confirming,
+  isGuest,
 }: {
   drafts: DraftResult[];
   onConfirm: (draft: DraftResult) => void;
   confirming: boolean;
+  isGuest: boolean;
 }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [postingId, setPostingId] = useState<string | null>(null);
 
   const handleCopy = async (content: string, provider: string) => {
     await navigator.clipboard.writeText(content);
     setCopiedId(provider);
     toast.success("クリップボードにコピーしました");
     setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handlePostToX = async (draft: DraftResult) => {
+    setPostingId(draft.provider);
+    try {
+      const res = await fetch("/api/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: draft.content }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "投稿に失敗しました");
+      }
+      toast.success("Xに投稿しました！");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "投稿に失敗しました"
+      );
+    } finally {
+      setPostingId(null);
+    }
   };
 
   if (drafts.length === 0) {
@@ -147,7 +173,7 @@ function AISheetTabs({
                     {draft.charCount}文字 / 280文字
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -168,6 +194,22 @@ function AISheetTabs({
                     <BookmarkPlus className="mr-1 h-3.5 w-3.5" />
                     確定
                   </Button>
+                  {!isGuest && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200"
+                      onClick={() => handlePostToX(draft)}
+                      disabled={postingId === draft.provider}
+                    >
+                      {postingId === draft.provider ? (
+                        <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Send className="mr-1 h-3.5 w-3.5" />
+                      )}
+                      Xに投稿
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -541,6 +583,7 @@ function GeneratePage() {
             drafts={drafts}
             onConfirm={handleConfirm}
             confirming={confirming}
+            isGuest={isGuest}
           />
         </div>
       </div>
