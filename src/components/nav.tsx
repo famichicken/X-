@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Lightbulb, Sparkles, History, Settings, LogIn, LogOut, Heart } from "lucide-react";
+import { Lightbulb, Sparkles, History, Settings, LogIn, LogOut, Heart, Flame } from "lucide-react";
 import { useAuth } from "@/lib/guest";
 
 const navItems = [
   { href: "/ideas", icon: Lightbulb, label: "ネタ帳" },
   { href: "/generate", icon: Sparkles, label: "AI生成" },
+  { href: "/reference", icon: Flame, label: "バズ分析" },
   { href: "/engage", icon: Heart, label: "エンゲージ" },
   { href: "/history", icon: History, label: "履歴" },
   { href: "/settings", icon: Settings, label: "設定" },

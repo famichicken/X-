@@ -23,6 +23,7 @@ import {
   Check,
   BookmarkPlus,
   BarChart3,
+  Flame,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -247,6 +248,8 @@ function GeneratePage() {
     gemini: false,
     grok: false,
   });
+  const [useReference, setUseReference] = useState(false);
+  const [refPostCount, setRefPostCount] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [drafts, setDrafts] = useState<DraftResult[]>([]);
@@ -254,7 +257,11 @@ function GeneratePage() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace("/");
+      return;
     }
+    const refs = store.getReferencePosts();
+    setRefPostCount(refs.length);
+    if (refs.length > 0) setUseReference(true);
   }, [isAuthenticated, isLoading, router]);
 
   const toggleProvider = (id: string) => {
@@ -280,6 +287,26 @@ function GeneratePage() {
     setDrafts([]);
 
     try {
+      // Build reference context from buzz posts
+      let refContext = additionalContext.trim() || "";
+      if (useReference) {
+        const refPosts = store.getReferencePosts();
+        if (refPosts.length > 0) {
+          const refText = refPosts
+            .slice(0, 5)
+            .map(
+              (p, i) =>
+                `[参考バズポスト${i + 1}] (いいね:${p.likes} RT:${p.retweets} リプ:${p.replies})\n${p.content}${p.memo ? `\n→成功要因: ${p.memo}` : ""}`
+            )
+            .join("\n\n");
+          const prefix =
+            "以下は投稿者の過去のバズポストです。文体・構造・トーンを参考にして、同じ人が書いたような投稿を生成してください:\n\n";
+          refContext = refContext
+            ? `${prefix}${refText}\n\n---\n追加指示: ${refContext}`
+            : `${prefix}${refText}`;
+        }
+      }
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -289,7 +316,7 @@ function GeneratePage() {
           providers,
           tone,
           targetAudience: target,
-          additionalContext: additionalContext.trim() || undefined,
+          additionalContext: refContext || undefined,
         }),
       });
 
@@ -437,6 +464,27 @@ function GeneratePage() {
                   className="mt-1.5 min-h-[60px]"
                 />
               </div>
+
+              {/* Reference posts toggle */}
+              {refPostCount > 0 && (
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <div>
+                      <p className="text-sm font-medium">バズポスト参照</p>
+                      <p className="text-[10px] text-neutral-500">
+                        {refPostCount}件の登録ポストを参考に生成
+                      </p>
+                    </div>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={useReference}
+                    onChange={(e) => setUseReference(e.target.checked)}
+                    className="h-4 w-4 rounded border-neutral-300"
+                  />
+                </div>
+              )}
 
               {/* Provider switches */}
               <div>

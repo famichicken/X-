@@ -111,6 +111,59 @@ export function deletePost(id: string): boolean {
   return true;
 }
 
+// Reference Posts (バズポスト)
+export interface ReferencePost {
+  id: string;
+  content: string;
+  likes: number;
+  retweets: number;
+  replies: number;
+  impressions: number;
+  bookmarks: number;
+  postedAt: string;
+  tags: string;
+  memo: string;
+  createdAt: string;
+}
+
+export function getReferencePosts(): ReferencePost[] {
+  return getStore<ReferencePost[]>("xpg_reference_posts", []);
+}
+
+export function addReferencePost(
+  post: Omit<ReferencePost, "id" | "createdAt">
+): ReferencePost {
+  const posts = getReferencePosts();
+  const newPost: ReferencePost = {
+    ...post,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+  };
+  posts.unshift(newPost);
+  setStore("xpg_reference_posts", posts);
+  return newPost;
+}
+
+export function updateReferencePost(
+  id: string,
+  data: Partial<ReferencePost>
+): ReferencePost | null {
+  const posts = getReferencePosts();
+  const idx = posts.findIndex((p) => p.id === id);
+  if (idx === -1) return null;
+  posts[idx] = { ...posts[idx], ...data };
+  setStore("xpg_reference_posts", posts);
+  return posts[idx];
+}
+
+export function deleteReferencePost(id: string): boolean {
+  const posts = getReferencePosts();
+  const filtered = posts.filter((p) => p.id !== id);
+  if (filtered.length === posts.length) return false;
+  setStore("xpg_reference_posts", filtered);
+  return true;
+}
+
 // Settings
 export interface LocalSettings {
   claudeApiKey: string;
