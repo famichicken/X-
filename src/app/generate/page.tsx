@@ -1,8 +1,9 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
+import { useAuth } from "@/lib/guest";
+import * as store from "@/lib/local-store";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -227,7 +228,7 @@ function AISheetTabs({
 }
 
 function GeneratePage() {
-  const { data: session, status } = useSession();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -251,10 +252,10 @@ function GeneratePage() {
   const [drafts, setDrafts] = useState<DraftResult[]>([]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isLoading && !isAuthenticated) {
       router.replace("/");
     }
-  }, [status, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   const toggleProvider = (id: string) => {
     setSelectedProviders((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -311,6 +312,24 @@ function GeneratePage() {
 
   const handleConfirm = async (draft: DraftResult) => {
     setConfirming(true);
+    if (isGuest) {
+      store.addPost({
+        content: draft.content,
+        llmProvider: draft.provider,
+        llmModel: draft.model,
+        qualityScore: draft.qualityScore,
+        engagementScore: draft.engagementScore,
+        status: "confirmed",
+        coachingAdvice: draft.coachingAdvice,
+        xPostId: null,
+        postedAt: null,
+        scheduledAt: null,
+      });
+      toast.success("投稿を確定しました");
+      router.push("/history");
+      setConfirming(false);
+      return;
+    }
     try {
       const res = await fetch("/api/history", {
         method: "POST",
@@ -336,7 +355,7 @@ function GeneratePage() {
     }
   };
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-neutral-500">読み込み中...</div>

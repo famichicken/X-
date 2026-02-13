@@ -21,6 +21,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   themeColor: "#000000",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -33,7 +34,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="/X-/icons/icon-192.png" />
       </head>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <Providers>
           <Nav />
           <main className="min-h-screen">{children}</main>

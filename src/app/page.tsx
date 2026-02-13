@@ -1,6 +1,6 @@
 "use client";
 
-import { useSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,8 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { Lightbulb, Sparkles, BarChart3, GraduationCap } from "lucide-react";
+import { Lightbulb, Sparkles, BarChart3, GraduationCap, User } from "lucide-react";
+import { useAuth } from "@/lib/guest";
 
 const features = [
   {
@@ -41,16 +42,16 @@ const features = [
 ];
 
 export default function LandingPage() {
-  const { data: session, status } = useSession();
+  const { isAuthenticated, isLoading, enterGuestMode } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated" && session) {
+    if (isAuthenticated) {
       router.replace("/ideas");
     }
-  }, [session, status, router]);
+  }, [isAuthenticated, router]);
 
-  if (status === "loading") {
+  if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-neutral-500">読み込み中...</div>
@@ -58,9 +59,14 @@ export default function LandingPage() {
     );
   }
 
-  if (status === "authenticated") {
+  if (isAuthenticated) {
     return null;
   }
+
+  const handleGuestMode = () => {
+    enterGuestMode();
+    router.push("/ideas");
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-16">
@@ -91,13 +97,27 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <Button
-          size="lg"
-          className="h-12 px-8 text-base"
-          onClick={() => signIn("twitter")}
-        >
-          Xでログインして始める
-        </Button>
+        <div className="flex flex-col items-center gap-3">
+          <Button
+            size="lg"
+            className="h-12 w-64 px-8 text-base"
+            onClick={() => signIn("twitter")}
+          >
+            Xでログインして始める
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-12 w-64 px-8 text-base"
+            onClick={handleGuestMode}
+          >
+            <User className="mr-2 h-4 w-4" />
+            ゲストモードで始める
+          </Button>
+          <p className="mt-2 text-sm text-neutral-400">
+            ゲストモードではデータはブラウザに保存されます
+          </p>
+        </div>
       </div>
     </div>
   );

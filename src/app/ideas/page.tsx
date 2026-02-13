@@ -1,6 +1,5 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Sparkles, Trash2, Edit2, Check, X } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "@/lib/guest";
+import * as store from "@/lib/local-store";
 
 interface Idea {
   id: string;
@@ -143,7 +144,7 @@ function IdeaCard({
 }
 
 export default function IdeasPage() {
-  const { data: session, status } = useSession();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
   const router = useRouter();
   const [ideas, setIdeas] = useState<Idea[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,6 +154,11 @@ export default function IdeasPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchIdeas = useCallback(async () => {
+    if (isGuest) {
+      setIdeas(store.getIdeas());
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/ideas");
       if (!res.ok) throw new Error("Failed to fetch ideas");
@@ -163,17 +169,17 @@ export default function IdeasPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isLoading && !isAuthenticated) {
       router.replace("/");
       return;
     }
-    if (status === "authenticated") {
+    if (isAuthenticated) {
       fetchIdeas();
     }
-  }, [status, router, fetchIdeas]);
+  }, [isAuthenticated, isLoading, router, fetchIdeas]);
 
   const handleAdd = async () => {
     if (!newContent.trim()) {
@@ -181,6 +187,22 @@ export default function IdeasPage() {
       return;
     }
     setSubmitting(true);
+    if (isGuest) {
+      store.addIdea({
+        content: newContent.trim(),
+        category: newCategory,
+        tags: newTags.trim(),
+        priority: 0,
+        status: "active",
+      });
+      setNewContent("");
+      setNewTags("");
+      setNewCategory("general");
+      toast.success("アイデアを追加しました");
+      fetchIdeas();
+      setSubmitting(false);
+      return;
+    }
     try {
       const res = await fetch("/api/ideas", {
         method: "POST",
@@ -205,6 +227,12 @@ export default function IdeasPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isGuest) {
+      store.deleteIdea(id);
+      toast.success("アイデアを削除しました");
+      fetchIdeas();
+      return;
+    }
     try {
       const res = await fetch(`/api/ideas?id=${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete idea");
@@ -216,6 +244,12 @@ export default function IdeasPage() {
   };
 
   const handleUpdate = async (id: string, data: Partial<Idea>) => {
+    if (isGuest) {
+      store.updateIdea(id, data);
+      toast.success("アイデアを更新しました");
+      fetchIdeas();
+      return;
+    }
     try {
       const res = await fetch("/api/ideas", {
         method: "PUT",
@@ -236,7 +270,7 @@ export default function IdeasPage() {
     );
   };
 
-  if (status === "loading" || loading) {
+  if (isLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-neutral-500">読み込み中...</div>

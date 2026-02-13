@@ -1,6 +1,5 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +15,8 @@ import {
 } from "@/components/ui/card";
 import { Save, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "@/lib/guest";
+import * as store from "@/lib/local-store";
 
 interface Settings {
   claudeApiKey: string;
@@ -48,7 +49,7 @@ const TONE_OPTIONS = [
 ];
 
 export default function SettingsPage() {
-  const { status } = useSession();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -66,16 +67,21 @@ export default function SettingsPage() {
   });
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isLoading && !isAuthenticated) {
       router.replace("/");
       return;
     }
-    if (status === "authenticated") {
+    if (isAuthenticated) {
       fetchSettings();
     }
-  }, [status, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   const fetchSettings = async () => {
+    if (isGuest) {
+      setSettings(store.getSettings());
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/settings");
       if (!res.ok) throw new Error("Failed to fetch settings");
@@ -92,6 +98,12 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setSaving(true);
+    if (isGuest) {
+      store.saveSettings(settings);
+      toast.success("設定を保存しました");
+      setSaving(false);
+      return;
+    }
     try {
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -114,7 +126,7 @@ export default function SettingsPage() {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  if (status === "loading" || loading) {
+  if (isLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-neutral-500">読み込み中...</div>
@@ -128,6 +140,7 @@ export default function SettingsPage() {
         <h1 className="mb-2 text-2xl font-bold">設定</h1>
         <p className="text-neutral-500">
           APIキーとデフォルト設定を管理します。
+          {isGuest && " (ゲストモード: データはブラウザに保存されます)"}
         </p>
       </div>
 
@@ -137,7 +150,10 @@ export default function SettingsPage() {
           <CardHeader>
             <CardTitle className="text-lg">APIキー</CardTitle>
             <CardDescription>
-              各AIプロバイダーのAPIキーを設定します。キーは暗号化して保存されます。
+              各AIプロバイダーのAPIキーを設定します。
+              {isGuest
+                ? "キーはブラウザのローカルストレージに保存されます。"
+                : "キーは暗号化して保存されます。"}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -1,6 +1,5 @@
 "use client";
 
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +19,8 @@ import {
 } from "@/components/ui/accordion";
 import { Copy, Trash2, Check, BarChart3 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "@/lib/guest";
+import * as store from "@/lib/local-store";
 
 interface Post {
   id: string;
@@ -80,13 +81,18 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
 }
 
 export default function HistoryPage() {
-  const { data: session, status } = useSession();
+  const { isAuthenticated, isGuest, isLoading } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const fetchPosts = useCallback(async () => {
+    if (isGuest) {
+      setPosts(store.getPosts());
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/history");
       if (!res.ok) throw new Error("Failed to fetch posts");
@@ -97,17 +103,17 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isGuest]);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isLoading && !isAuthenticated) {
       router.replace("/");
       return;
     }
-    if (status === "authenticated") {
+    if (isAuthenticated) {
       fetchPosts();
     }
-  }, [status, router, fetchPosts]);
+  }, [isAuthenticated, isLoading, router, fetchPosts]);
 
   const handleCopy = async (content: string, id: string) => {
     await navigator.clipboard.writeText(content);
@@ -117,6 +123,12 @@ export default function HistoryPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isGuest) {
+      store.deletePost(id);
+      toast.success("投稿を削除しました");
+      fetchPosts();
+      return;
+    }
     try {
       const res = await fetch(`/api/history?id=${id}`, {
         method: "DELETE",
@@ -129,7 +141,7 @@ export default function HistoryPage() {
     }
   };
 
-  if (status === "loading" || loading) {
+  if (isLoading || loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-pulse text-neutral-500">読み込み中...</div>
@@ -191,14 +203,12 @@ export default function HistoryPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Post content */}
                 <div className="rounded-lg border bg-neutral-50 p-4 dark:bg-neutral-900">
                   <p className="whitespace-pre-wrap text-sm leading-relaxed">
                     {post.content}
                   </p>
                 </div>
 
-                {/* Quality scores */}
                 <div className="grid gap-2 sm:grid-cols-2">
                   <ScoreBar
                     label="品質スコア"
@@ -210,7 +220,6 @@ export default function HistoryPage() {
                   />
                 </div>
 
-                {/* Posted metrics */}
                 {post.status === "posted" && (
                   <div className="flex flex-wrap gap-4 text-sm text-neutral-600 dark:text-neutral-400">
                     <span>いいね: {post.likes}</span>
@@ -221,7 +230,6 @@ export default function HistoryPage() {
                   </div>
                 )}
 
-                {/* Coaching accordion */}
                 {post.coachingAdvice && (
                   <Accordion type="single" collapsible>
                     <AccordionItem value="coaching">

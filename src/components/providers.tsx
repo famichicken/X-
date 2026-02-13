@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "react-hot-toast";
+import { GuestProvider } from "@/lib/guest";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,6 +18,7 @@ export function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
+      <GuestProvider>
       {children}
       <Toaster
         position="bottom-right"
@@ -42,6 +44,7 @@ export function Providers({ children }: ProvidersProps) {
           },
         }}
       />
+      </GuestProvider>
     </SessionProvider>
   );
 }
