@@ -7,8 +7,9 @@ const clientSecret = (process.env.X_CLIENT_SECRET ?? "").trim();
 
 /**
  * Custom fetch for X token endpoint.
- * Tries Public Client mode: sends client_id in body (no Basic Auth).
- * X Public Clients use PKCE only and reject Basic Auth headers.
+ * Confidential Client: constructs a clean request with Basic Auth from scratch.
+ * Uses token_endpoint_auth_method: "none" so oauth4webapi doesn't add its own auth,
+ * then we add the correct Basic Auth header ourselves.
  */
 async function xFetch(
   ...args: Parameters<typeof fetch>
@@ -23,32 +24,33 @@ async function xFetch(
   if (url.includes("oauth2/token")) {
     const init = args[1] ?? {};
 
-    // Extract body params from oauth4webapi's URLSearchParams
-    let bodyParams: URLSearchParams;
+    // Extract body as string from oauth4webapi's URLSearchParams
+    let bodyStr: string;
     if (init.body instanceof URLSearchParams) {
-      bodyParams = new URLSearchParams(init.body);
+      bodyStr = init.body.toString();
     } else if (typeof init.body === "string") {
-      bodyParams = new URLSearchParams(init.body);
+      bodyStr = init.body;
     } else {
-      bodyParams = new URLSearchParams();
+      bodyStr = String(init.body ?? "");
     }
 
-    // For Public Client: add client_id to body instead of Basic Auth header
-    if (!bodyParams.has("client_id")) {
-      bodyParams.set("client_id", clientId);
-    }
+    // Build Basic Auth using Buffer.from (same as working debug endpoint)
+    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
+      "base64"
+    );
 
     console.log("[auth] Token exchange to:", url);
-    console.log("[auth] Mode: Public Client (PKCE, no Basic Auth)");
-    console.log("[auth] ClientID:", clientId.slice(0, 8) + "...");
-    console.log("[auth] Body keys:", Array.from(bodyParams.keys()).join(", "));
+    console.log("[auth] Mode: Confidential Client (Basic Auth)");
+    console.log("[auth] Body:", bodyStr.replace(/code=[^&]+/, "code=***").replace(/code_verifier=[^&]+/, "cv=***").slice(0, 200));
 
+    // Construct request from scratch — same pattern as the working /api/debug-auth
     const response = await fetch("https://api.x.com/2/oauth2/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${credentials}`,
       },
-      body: bodyParams.toString(),
+      body: bodyStr,
     });
 
     if (!response.ok) {
@@ -73,6 +75,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       checks: ["pkce", "state"],
       clientId,
       clientSecret,
+      // "none" prevents oauth4webapi from adding its own auth — we handle it in xFetch
       client: {
         token_endpoint_auth_method: "none",
       },
