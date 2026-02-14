@@ -279,7 +279,8 @@ function GeneratePage() {
     searchParams.get("content") ?? ""
   );
   const ideaId = searchParams.get("ideaId") ?? undefined;
-  const [tone, setTone] = useState("casual");
+  const [tone, setTone] = useState(searchParams.get("tone") ?? "casual");
+  const [hashtags, setHashtags] = useState(searchParams.get("hashtags") ?? "");
   const [target, setTarget] = useState("general");
   const [additionalContext, setAdditionalContext] = useState("");
   const [selectedProviders, setSelectedProviders] = useState<
@@ -349,6 +350,15 @@ function GeneratePage() {
         }
       }
 
+      // Append hashtag instruction to context if provided
+      let finalContext = refContext || "";
+      if (hashtags.trim()) {
+        const hashtagInstruction = `以下のハッシュタグを投稿に含めてください: ${hashtags.trim()}`;
+        finalContext = finalContext
+          ? `${finalContext}\n\n${hashtagInstruction}`
+          : hashtagInstruction;
+      }
+
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -358,7 +368,7 @@ function GeneratePage() {
           providers,
           tone,
           targetAudience: target,
-          additionalContext: refContext || undefined,
+          additionalContext: finalContext || undefined,
         }),
       });
 

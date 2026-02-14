@@ -25,6 +25,8 @@ interface Idea {
   content: string;
   category: string;
   tags: string;
+  tone: string;
+  hashtags: string;
   priority: number;
   status: string;
   createdAt: string;
@@ -40,6 +42,16 @@ const CATEGORIES = [
   { value: "tips", label: "Tips・ノウハウ" },
   { value: "news", label: "ニュース" },
   { value: "humor", label: "ユーモア" },
+];
+
+const TONES = [
+  { value: "casual", label: "カジュアル" },
+  { value: "professional", label: "プロフェッショナル" },
+  { value: "humorous", label: "ユーモア" },
+  { value: "provocative", label: "挑発的" },
+  { value: "informative", label: "情報提供" },
+  { value: "inspirational", label: "インスピレーション" },
+  { value: "analytical", label: "分析的" },
 ];
 
 function IdeaCard({
@@ -71,6 +83,8 @@ function IdeaCard({
     : [];
   const categoryLabel =
     CATEGORIES.find((c) => c.value === idea.category)?.label ?? idea.category;
+  const toneLabel =
+    TONES.find((t) => t.value === idea.tone)?.label ?? idea.tone;
 
   return (
     <Card className="group relative">
@@ -78,6 +92,11 @@ function IdeaCard({
         <div className="flex items-start justify-between">
           <div className="flex flex-wrap gap-1.5">
             <Badge variant="secondary">{categoryLabel}</Badge>
+            {idea.tone && (
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                {toneLabel}
+              </Badge>
+            )}
             {tags.map((tag) => (
               <Badge key={tag} variant="outline" className="text-xs">
                 {tag.trim()}
@@ -123,7 +142,14 @@ function IdeaCard({
             className="min-h-[80px]"
           />
         ) : (
-          <p className="whitespace-pre-wrap text-sm">{idea.content}</p>
+          <>
+            <p className="whitespace-pre-wrap text-sm">{idea.content}</p>
+            {idea.hashtags && (
+              <p className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                {idea.hashtags}
+              </p>
+            )}
+          </>
         )}
       </CardContent>
       <CardFooter className="justify-between pt-0">
@@ -151,6 +177,8 @@ export default function IdeasPage() {
   const [newContent, setNewContent] = useState("");
   const [newCategory, setNewCategory] = useState("general");
   const [newTags, setNewTags] = useState("");
+  const [newTone, setNewTone] = useState("casual");
+  const [newHashtags, setNewHashtags] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const fetchIdeas = useCallback(async () => {
@@ -192,12 +220,16 @@ export default function IdeasPage() {
         content: newContent.trim(),
         category: newCategory,
         tags: newTags.trim(),
+        tone: newTone,
+        hashtags: newHashtags.trim(),
         priority: 0,
         status: "active",
       });
       setNewContent("");
       setNewTags("");
       setNewCategory("general");
+      setNewTone("casual");
+      setNewHashtags("");
       toast.success("アイデアを追加しました");
       fetchIdeas();
       setSubmitting(false);
@@ -211,12 +243,16 @@ export default function IdeasPage() {
           content: newContent.trim(),
           category: newCategory,
           tags: newTags.trim(),
+          tone: newTone,
+          hashtags: newHashtags.trim(),
         }),
       });
       if (!res.ok) throw new Error("Failed to create idea");
       setNewContent("");
       setNewTags("");
       setNewCategory("general");
+      setNewTone("casual");
+      setNewHashtags("");
       toast.success("アイデアを追加しました");
       fetchIdeas();
     } catch {
@@ -265,9 +301,13 @@ export default function IdeasPage() {
   };
 
   const handleGenerate = (idea: Idea) => {
-    router.push(
-      `/generate?ideaId=${idea.id}&content=${encodeURIComponent(idea.content)}`
-    );
+    const params = new URLSearchParams({
+      content: idea.content,
+    });
+    if (idea.id) params.set("ideaId", idea.id);
+    if (idea.tone) params.set("tone", idea.tone);
+    if (idea.hashtags) params.set("hashtags", idea.hashtags);
+    router.push(`/generate?${params.toString()}`);
   };
 
   if (isLoading || loading) {
@@ -323,12 +363,39 @@ export default function IdeasPage() {
               </select>
             </div>
             <div>
+              <Label htmlFor="idea-tone">トーン</Label>
+              <select
+                id="idea-tone"
+                value={newTone}
+                onChange={(e) => setNewTone(e.target.value)}
+                className="mt-1.5 flex h-9 w-full rounded-md border border-neutral-200 bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950 dark:border-neutral-800 dark:focus-visible:ring-neutral-300"
+              >
+                {TONES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
               <Label htmlFor="idea-tags">タグ（カンマ区切り）</Label>
               <Input
                 id="idea-tags"
                 placeholder="AI, プログラミング, 生産性"
                 value={newTags}
                 onChange={(e) => setNewTags(e.target.value)}
+                className="mt-1.5"
+              />
+            </div>
+            <div>
+              <Label htmlFor="idea-hashtags">ハッシュタグ</Label>
+              <Input
+                id="idea-hashtags"
+                placeholder="#AI #プログラミング #生産性向上"
+                value={newHashtags}
+                onChange={(e) => setNewHashtags(e.target.value)}
                 className="mt-1.5"
               />
             </div>

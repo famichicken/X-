@@ -21,6 +21,8 @@ export interface LocalIdea {
   content: string;
   category: string;
   tags: string;
+  tone: string;
+  hashtags: string;
   priority: number;
   status: string;
   createdAt: string;

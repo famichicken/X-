@@ -77,46 +77,16 @@ export default function SettingsPage() {
   }, [isAuthenticated, isLoading, router]);
 
   const fetchSettings = async () => {
-    if (isGuest) {
-      setSettings(store.getSettings());
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch("/api/settings");
-      if (!res.ok) throw new Error("Failed to fetch settings");
-      const data = await res.json();
-      if (data.settings) {
-        setSettings(data.settings);
-      }
-    } catch {
-      toast.error("設定の取得に失敗しました");
-    } finally {
-      setLoading(false);
-    }
+    // Always load from localStorage (DB not available on Vercel)
+    setSettings(store.getSettings());
+    setLoading(false);
   };
 
   const handleSave = async () => {
     setSaving(true);
-    if (isGuest) {
-      store.saveSettings(settings);
-      toast.success("設定を保存しました");
-      setSaving(false);
-      return;
-    }
-    try {
-      const res = await fetch("/api/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settings),
-      });
-      if (!res.ok) throw new Error("Failed to save settings");
-      toast.success("設定を保存しました");
-    } catch {
-      toast.error("設定の保存に失敗しました");
-    } finally {
-      setSaving(false);
-    }
+    store.saveSettings(settings);
+    toast.success("設定を保存しました");
+    setSaving(false);
   };
 
   const updateSetting = <K extends keyof Settings>(
