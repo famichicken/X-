@@ -3,6 +3,7 @@ import type { NextAuthConfig } from "next-auth";
 import Twitter from "next-auth/providers/twitter";
 
 const config: NextAuthConfig = {
+  trustHost: true,
   providers: [
     Twitter({
       clientId: process.env.X_CLIENT_ID!,
