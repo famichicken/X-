@@ -5,14 +5,10 @@ import { customFetch } from "@auth/core";
 const clientId = (process.env.X_CLIENT_ID ?? "").trim();
 const clientSecret = (process.env.X_CLIENT_SECRET ?? "").trim();
 
-if (!clientId || !clientSecret) {
-  console.warn("[auth] WARNING: X_CLIENT_ID or X_CLIENT_SECRET is not set!");
-}
-
 /**
- * Custom fetch wrapper that fully controls the token exchange request.
- * Constructs a fresh request with explicit Basic Auth header to ensure
- * correct authentication with X's token endpoint.
+ * Custom fetch for X token endpoint.
+ * Tries Public Client mode: sends client_id in body (no Basic Auth).
+ * X Public Clients use PKCE only and reject Basic Auth headers.
  */
 async function xFetch(
   ...args: Parameters<typeof fetch>
@@ -27,36 +23,32 @@ async function xFetch(
   if (url.includes("oauth2/token")) {
     const init = args[1] ?? {};
 
-    // Extract body as string (oauth4webapi passes URLSearchParams)
-    let bodyStr: string;
+    // Extract body params from oauth4webapi's URLSearchParams
+    let bodyParams: URLSearchParams;
     if (init.body instanceof URLSearchParams) {
-      bodyStr = init.body.toString();
+      bodyParams = new URLSearchParams(init.body);
     } else if (typeof init.body === "string") {
-      bodyStr = init.body;
+      bodyParams = new URLSearchParams(init.body);
     } else {
-      bodyStr = String(init.body ?? "");
+      bodyParams = new URLSearchParams();
     }
 
-    // Use Buffer.from for reliable base64 in Node.js (no URL-encoding needed
-    // since these credentials contain only unreserved URI characters)
-    const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
-      "base64"
-    );
+    // For Public Client: add client_id to body instead of Basic Auth header
+    if (!bodyParams.has("client_id")) {
+      bodyParams.set("client_id", clientId);
+    }
 
     console.log("[auth] Token exchange to:", url);
+    console.log("[auth] Mode: Public Client (PKCE, no Basic Auth)");
     console.log("[auth] ClientID:", clientId.slice(0, 8) + "...");
-    console.log("[auth] Secret length:", clientSecret.length);
-    console.log("[auth] Auth header prefix:", `Basic ${credentials.slice(0, 12)}...`);
-    console.log("[auth] Body params:", bodyStr.replace(/code=[^&]+/, "code=***").slice(0, 300));
+    console.log("[auth] Body keys:", Array.from(bodyParams.keys()).join(", "));
 
-    // Build the request completely from scratch to avoid any header/body issues
     const response = await fetch("https://api.x.com/2/oauth2/token", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Basic ${credentials}`,
       },
-      body: bodyStr,
+      body: bodyParams.toString(),
     });
 
     if (!response.ok) {
@@ -81,6 +73,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       checks: ["pkce", "state"],
       clientId,
       clientSecret,
+      client: {
+        token_endpoint_auth_method: "none",
+      },
       authorization: {
         url: "https://x.com/i/oauth2/authorize",
         params: {
