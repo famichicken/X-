@@ -4,6 +4,7 @@ import useStore from '../store/useStore';
 const NAV_ITEMS = [
   { id: 'ideabook', label: 'ネタ帳', icon: BookOpen },
   { id: 'history', label: '履歴', icon: History },
+  { id: 'settings', label: '設定', icon: Settings },
 ];
 
 export default function Header() {

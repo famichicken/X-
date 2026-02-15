@@ -49,6 +49,7 @@ export default function GenerateScreen() {
     abTestResults,
     setAbTestResults,
     addToHistory,
+    xProfile,
   } = useStore();
 
   const [copiedId, setCopiedId] = useState(null);
@@ -185,16 +186,15 @@ export default function GenerateScreen() {
           <span className="text-sm">ネタ帳に戻る</span>
         </button>
         <div className="bg-gray-900 border border-gray-700 rounded-xl p-4">
-          <div className="text-xs text-gray-500 mb-1">選択中のネタ</div>
+          <div className="text-xs text-gray-500 mb-1">選択中のアイディア</div>
           <p className="text-white text-lg font-medium">{selectedIdea.text}</p>
-          {selectedIdea.tags?.length > 0 && (
-            <div className="flex gap-1.5 mt-2">
-              {selectedIdea.tags.map((tag) => (
-                <span key={tag} className="text-xs bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">
-                  #{tag}
-                </span>
-              ))}
-            </div>
+          {(!xProfile.displayName && !xProfile.bio) && (
+            <button
+              onClick={() => setCurrentView('settings')}
+              className="mt-2 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              プロフィールを設定すると、あなたのスタイルに合ったポストが生成されます →
+            </button>
           )}
         </div>
       </div>

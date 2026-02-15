@@ -218,7 +218,21 @@ export async function simulateABTest(posts) {
 }
 
 // プロンプト構築ヘルパー（実際のAPI呼び出し時に使用）
-export function buildPrompt(idea, tone, postType, userProfile = {}) {
+export function buildPrompt(idea, tone, postType, xProfile = {}) {
+  const profileSection = [];
+  if (xProfile.displayName) {
+    profileSection.push(`【投稿者名】\n${xProfile.displayName}`);
+  }
+  if (xProfile.bio) {
+    profileSection.push(`【投稿者の紹介文（bio）】\n${xProfile.bio}`);
+  }
+  if (xProfile.targetAudience) {
+    profileSection.push(`【ターゲット層】\n${xProfile.targetAudience}`);
+  }
+  if (xProfile.samplePosts) {
+    profileSection.push(`【投稿者の過去のポスト（文体の参考にしてください）】\n${xProfile.samplePosts}`);
+  }
+
   return `
 あなたはXの投稿を作成するプロフェッショナルです。
 以下の条件で最適な投稿を生成してください。
@@ -232,11 +246,11 @@ ${tone}
 【投稿タイプ】
 ${postType}
 
-${userProfile.target ? `【ターゲット層】\n${userProfile.target}` : ''}
-${userProfile.style ? `【発信スタイル】\n${userProfile.style}` : ''}
+${profileSection.length > 0 ? profileSection.join('\n\n') : ''}
 
 ${ALGORITHM_PROMPT_INSTRUCTIONS}
 
-上記ルールを踏まえて、エンゲージメントを最大化する投稿を1つ生成してください。
+上記ルールを踏まえて、投稿者のスタイルに合わせてエンゲージメントを最大化する投稿を1つ生成してください。
+投稿者の過去のポストがある場合は、その文体・トーン・話し方を参考にしてください。
   `.trim();
 }
